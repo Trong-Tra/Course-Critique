@@ -1,5 +1,6 @@
 import Link from "next/link";
 import PartnerSection from "@/components/PartnerSection";
+import CourseCard from "@/components/CourseCard";
 
 // Mock data for top-rated courses
 const topCourses = [
@@ -111,51 +112,7 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {topCourses.map((course) => (
-              <div
-                key={course.id}
-                className="bg-white rounded-xl card-shadow hover:card-shadow-hover transition-all duration-300 overflow-hidden group"
-              >
-                <div className="relative">
-                  <div className="w-full h-48 bg-gradient-to-br from-indigo-200 to-purple-200 flex items-center justify-center">
-                    <span className="text-indigo-600 font-semibold">
-                      {course.title}
-                    </span>
-                  </div>
-                  <div className="absolute top-4 right-4">
-                    <span className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-sm font-semibold">
-                      ⭐ {course.rating}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-6">
-                  <div className="mb-2">
-                    <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm font-medium">
-                      {course.category}
-                    </span>
-                  </div>
-
-                  <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">
-                    {course.title}
-                  </h3>
-
-                  <p className="text-gray-600 mb-4">By {course.instructor}</p>
-
-                  <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                    <span>{course.students.toLocaleString()} students</span>
-                    <span className="text-2xl font-bold text-indigo-600">
-                      {course.price}
-                    </span>
-                  </div>
-
-                  <Link
-                    href={`/courses/${course.id}`}
-                    className="block w-full bg-indigo-600 text-white text-center py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors duration-200"
-                  >
-                    View Details
-                  </Link>
-                </div>
-              </div>
+              <CourseCard key={course.id} course={course} />
             ))}
           </div>
 
