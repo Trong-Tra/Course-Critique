@@ -63,6 +63,11 @@ const PartnerSection = () => {
                       className={
                         partner.alt === "CodeLearn"
                           ? "object-contain transition-all duration-300 filter grayscale hover:grayscale-0"
+                          : partner.alt === "HackerRank" ||
+                            partner.alt === "FreeCodeCamp" ||
+                            partner.alt === "VBI Academy" ||
+                            partner.alt === "Udemy"
+                          ? "object-contain transition-all duration-300 filter brightness-0 hover:brightness-50 hover:hue-rotate-180"
                           : "object-contain transition-all duration-300 filter brightness-0 hover:brightness-100"
                       }
                     />
