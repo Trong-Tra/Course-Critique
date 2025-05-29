@@ -1,6 +1,7 @@
 import Link from "next/link";
 import PartnerSection from "@/components/PartnerSection";
 import CourseCard from "@/components/CourseCard";
+import SplitText from "@/components/SplitText";
 
 // Mock data for top-rated courses
 const topCourses = [
@@ -44,14 +45,48 @@ export default function Home() {
         <div className="absolute inset-0 bg-black opacity-10"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              Discover the Perfect
-              <span className="block text-yellow-300">Learning Journey</span>
-            </h1>
-            <p className="text-xl md:text-2xl mb-8 text-indigo-100 max-w-3xl mx-auto">
-              Read authentic reviews from real students and make informed
-              decisions about your next course
-            </p>
+            <div className="mb-2">
+              <SplitText
+                text="Discover the Perfect"
+                className="text-4xl md:text-6xl font-bold"
+                delay={50}
+                animationFrom={{
+                  opacity: 0,
+                  transform: "translate3d(0,60px,0)",
+                }}
+                animationTo={{ opacity: 1, transform: "translate3d(0,0,0)" }}
+                as="h1"
+                display="block"
+              />
+            </div>
+            <div className="mb-6">
+              <SplitText
+                text="Learning Journey"
+                className="text-4xl md:text-6xl font-bold text-yellow-300 leading-tight"
+                delay={60}
+                animationFrom={{
+                  opacity: 0,
+                  transform: "translate3d(0,40px,0)",
+                }}
+                animationTo={{ opacity: 1, transform: "translate3d(0,0,0)" }}
+                as="h1"
+                display="block"
+              />
+            </div>
+            <div className="mb-8">
+              <SplitText
+                text="Read authentic reviews from real students and make informed decisions about your next course"
+                className="text-xl md:text-2xl text-indigo-100 max-w-3xl mx-auto"
+                delay={30}
+                animationFrom={{
+                  opacity: 0,
+                  transform: "translate3d(0,20px,0)",
+                }}
+                animationTo={{ opacity: 1, transform: "translate3d(0,0,0)" }}
+                as="p"
+                display="block"
+              />
+            </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/courses"
@@ -101,13 +136,34 @@ export default function Home() {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Top Rated Courses
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Discover the highest-rated courses based on authentic student
-              reviews
-            </p>
+            <div className="mb-4">
+              <SplitText
+                text="Top Rated Courses"
+                className="text-3xl md:text-4xl font-bold text-gray-900"
+                delay={40}
+                animationFrom={{
+                  opacity: 0,
+                  transform: "translate3d(0,30px,0)",
+                }}
+                animationTo={{ opacity: 1, transform: "translate3d(0,0,0)" }}
+                as="h2"
+                display="block"
+              />
+            </div>
+            <div>
+              <SplitText
+                text="Discover the highest-rated courses based on authentic student reviews"
+                className="text-xl text-gray-600 max-w-2xl mx-auto"
+                delay={25}
+                animationFrom={{
+                  opacity: 0,
+                  transform: "translate3d(0,20px,0)",
+                }}
+                animationTo={{ opacity: 1, transform: "translate3d(0,0,0)" }}
+                as="p"
+                display="block"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -131,9 +187,20 @@ export default function Home() {
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Why Choose Course Critique?
-            </h2>
+            <div className="mb-4">
+              <SplitText
+                text="Why Choose Course Critique?"
+                className="text-3xl md:text-4xl font-bold text-gray-900"
+                delay={45}
+                animationFrom={{
+                  opacity: 0,
+                  transform: "translate3d(0,35px,0)",
+                }}
+                animationTo={{ opacity: 1, transform: "translate3d(0,0,0)" }}
+                as="h2"
+                display="block"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -153,12 +220,34 @@ export default function Home() {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">
-                Authentic Reviews
-              </h3>
-              <p className="text-gray-600">
-                Real feedback from verified students who completed the courses
-              </p>
+              <div className="mb-4">
+                <SplitText
+                  text="Authentic Reviews"
+                  className="text-xl font-bold text-gray-900"
+                  delay={35}
+                  animationFrom={{
+                    opacity: 0,
+                    transform: "translate3d(0,25px,0)",
+                  }}
+                  animationTo={{ opacity: 1, transform: "translate3d(0,0,0)" }}
+                  as="h3"
+                  display="block"
+                />
+              </div>
+              <div>
+                <SplitText
+                  text="Real feedback from verified students who completed the courses"
+                  className="text-gray-600"
+                  delay={20}
+                  animationFrom={{
+                    opacity: 0,
+                    transform: "translate3d(0,15px,0)",
+                  }}
+                  animationTo={{ opacity: 1, transform: "translate3d(0,0,0)" }}
+                  as="p"
+                  display="block"
+                />
+              </div>
             </div>
 
             <div className="text-center p-6">
@@ -177,12 +266,34 @@ export default function Home() {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">
-                Verified Ratings
-              </h3>
-              <p className="text-gray-600">
-                Transparent rating system to help you make the right choice
-              </p>
+              <div className="mb-4">
+                <SplitText
+                  text="Verified Ratings"
+                  className="text-xl font-bold text-gray-900"
+                  delay={35}
+                  animationFrom={{
+                    opacity: 0,
+                    transform: "translate3d(0,25px,0)",
+                  }}
+                  animationTo={{ opacity: 1, transform: "translate3d(0,0,0)" }}
+                  as="h3"
+                  display="block"
+                />
+              </div>
+              <div>
+                <SplitText
+                  text="Transparent rating system to help you make the right choice"
+                  className="text-gray-600"
+                  delay={20}
+                  animationFrom={{
+                    opacity: 0,
+                    transform: "translate3d(0,15px,0)",
+                  }}
+                  animationTo={{ opacity: 1, transform: "translate3d(0,0,0)" }}
+                  as="p"
+                  display="block"
+                />
+              </div>
             </div>
 
             <div className="text-center p-6">
@@ -201,13 +312,34 @@ export default function Home() {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">
-                Community Driven
-              </h3>
-              <p className="text-gray-600">
-                Built by learners, for learners to share knowledge and
-                experiences
-              </p>
+              <div className="mb-4">
+                <SplitText
+                  text="Community Driven"
+                  className="text-xl font-bold text-gray-900"
+                  delay={35}
+                  animationFrom={{
+                    opacity: 0,
+                    transform: "translate3d(0,25px,0)",
+                  }}
+                  animationTo={{ opacity: 1, transform: "translate3d(0,0,0)" }}
+                  as="h3"
+                  display="block"
+                />
+              </div>
+              <div>
+                <SplitText
+                  text="Built by learners, for learners to share knowledge and experiences"
+                  className="text-gray-600"
+                  delay={20}
+                  animationFrom={{
+                    opacity: 0,
+                    transform: "translate3d(0,15px,0)",
+                  }}
+                  animationTo={{ opacity: 1, transform: "translate3d(0,0,0)" }}
+                  as="p"
+                  display="block"
+                />
+              </div>
             </div>
           </div>
         </div>
