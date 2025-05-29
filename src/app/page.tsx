@@ -1,4 +1,5 @@
 import Link from "next/link";
+import PartnerSection from "@/components/PartnerSection";
 
 // Mock data for top-rated courses
 const topCourses = [
@@ -91,6 +92,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Partner Section */}
+      <PartnerSection />
 
       {/* Top Rated Courses */}
       <section className="py-20 bg-white">
