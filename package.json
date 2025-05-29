@@ -6,12 +6,22 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:reset": "npx prisma db push --force-reset && npm run db:seed"
   },
   "dependencies": {
+    "@prisma/client": "^6.8.2",
     "@react-spring/web": "^10.0.1",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/pg": "^8.15.2",
+    "bcryptjs": "^3.0.2",
     "framer-motion": "^12.15.0",
+    "jsonwebtoken": "^9.0.2",
     "next": "15.3.2",
+    "pg": "^8.16.0",
+    "prisma": "^6.8.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -24,6 +34,10 @@
     "eslint": "^9",
     "eslint-config-next": "15.3.2",
     "tailwindcss": "^4",
+    "tsx": "^4.19.4",
     "typescript": "^5"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }
