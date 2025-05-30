@@ -34,6 +34,23 @@ Before running this project, make sure you have the following installed:
 - **PostgreSQL** database server
 - **Git** for version control
 
+## 🎬 Demo Video
+
+[![Watch the Demo Video](https://img.youtube.com/vi/b1vRvwYap-g/0.jpg)](https://www.youtube.com/watch?v=b1vRvwYap-g)
+
+## 📸 Screenshots
+![image](https://github.com/user-attachments/assets/d5e8aa55-8da8-4c12-a193-ada1d3e41440)
+
+![image](https://github.com/user-attachments/assets/059e0443-f81c-4f1e-851d-dc847c86a791)
+
+![image](https://github.com/user-attachments/assets/8679ed01-7489-465f-b2c1-632e76c46f9e)
+
+![image](https://github.com/user-attachments/assets/36f3abfa-1de4-4e63-9b45-8fdf0d6e1e4c)
+
+![image](https://github.com/user-attachments/assets/dbcc275e-7894-4b03-9083-d49721c6bfe9)
+
+![image](https://github.com/user-attachments/assets/e3c9cec6-47e7-4ab6-afab-38821d53d101)
+
 ## 🚀 Getting Started
 
 ### 1. Clone the Repository
