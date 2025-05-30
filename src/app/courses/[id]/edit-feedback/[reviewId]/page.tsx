@@ -4,102 +4,131 @@ import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import StarRating from "@/components/StarRating";
-
-// Mock course data
-const courseData: Record<
-  string,
-  {
-    id: number;
-    title: string;
-    instructor: string;
-  }
-> = {
-  "1": {
-    id: 1,
-    title: "Complete Python Programming",
-    instructor: "Dr. Sarah Johnson",
-  },
-  "2": {
-    id: 2,
-    title: "Advanced React & Next.js",
-    instructor: "Mike Chen",
-  },
-};
-
-// Mock review data
-const mockReviews: Record<
-  string,
-  {
-    id: number;
-    courseId: number;
-    rating: number;
-    comment: string;
-    wouldRecommend: boolean;
-    difficulty: string;
-    helpfulAspects: string[];
-  }
-> = {
-  "1": {
-    id: 1,
-    courseId: 1,
-    rating: 5,
-    comment:
-      "Excellent course! The instructor explains everything clearly and the projects are very practical. I feel confident using Python now.",
-    wouldRecommend: true,
-    difficulty: "medium",
-    helpfulAspects: [
-      "Clear explanations",
-      "Practical examples",
-      "Well organized",
-    ],
-  },
-};
+import { coursesApi, reviewsApi } from "@/lib/api";
+import { Course, Review } from "@/types/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function EditFeedbackPage() {
   const params = useParams();
   const router = useRouter();
   const courseId = params.id as string;
   const reviewId = params.reviewId as string;
+  const { user } = useAuth();
 
-  const course = courseData[courseId];
-  const existingReview = mockReviews[reviewId];
+  const [course, setCourse] = useState<Course | null>(null);
+  const [review, setReview] = useState<Review | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const [formData, setFormData] = useState({
+    title: "",
+    content: "",
     rating: 0,
-    comment: "",
+    pros: "",
+    cons: "",
     wouldRecommend: true,
-    difficulty: "medium",
-    helpfulAspects: [] as string[],
   });
 
   const [hoveredRating, setHoveredRating] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  // Fetch course and review data
   useEffect(() => {
-    if (existingReview) {
-      setFormData({
-        rating: existingReview.rating,
-        comment: existingReview.comment,
-        wouldRecommend: existingReview.wouldRecommend,
-        difficulty: existingReview.difficulty,
-        helpfulAspects: existingReview.helpfulAspects,
-      });
-    }
-  }, [existingReview]);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
 
-  if (!course || !existingReview) {
+        // Fetch course and review in parallel
+        const [courseResponse, reviewResponse] = await Promise.all([
+          coursesApi.getCourse(courseId),
+          reviewsApi.getReview(reviewId),
+        ]);
+
+        if (courseResponse.success && courseResponse.data) {
+          setCourse(courseResponse.data);
+        } else {
+          setError("Course not found");
+          return;
+        }
+
+        if (reviewResponse.success && reviewResponse.data) {
+          const reviewData = reviewResponse.data;
+          setReview(reviewData);
+
+          // Pre-fill form with existing review data
+          setFormData({
+            title: reviewData.title,
+            content: reviewData.content,
+            rating: reviewData.rating,
+            pros: reviewData.pros || "",
+            cons: reviewData.cons || "",
+            wouldRecommend: reviewData.wouldRecommend,
+          });
+        } else {
+          setError("Review not found");
+          return;
+        }
+      } catch (error: unknown) {
+        setError(
+          error instanceof Error ? error.message : "Failed to fetch data"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (courseId && reviewId) {
+      fetchData();
+    }
+  }, [courseId, reviewId]);
+
+  // Check if user is logged in and owns the review
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/auth/login");
+    } else if (!loading && review && user && review.userId !== user.id) {
+      setError("You can only edit your own reviews");
+    }
+  }, [user, loading, review, router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  if (error || !course || !review) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            Review Not Found
+            {error || "Not Found"}
           </h1>
           <Link
-            href="/courses"
+            href={`/courses/${courseId}`}
             className="text-indigo-600 hover:text-indigo-700"
           >
-            Back to Courses
+            Back to Course
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            Please log in to edit your review
+          </h1>
+          <Link
+            href="/auth/login"
+            className="text-indigo-600 hover:text-indigo-700"
+          >
+            Go to Login
           </Link>
         </div>
       </div>
@@ -118,53 +147,72 @@ export default function EditFeedbackPage() {
     setHoveredRating(0);
   };
 
-  const handleAspectToggle = (aspect: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      helpfulAspects: prev.helpfulAspects.includes(aspect)
-        ? prev.helpfulAspects.filter((a) => a !== aspect)
-        : [...prev.helpfulAspects, aspect],
-    }));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.rating === 0) {
       alert("Please select a rating");
       return;
     }
-    if (formData.comment.trim().length < 10) {
-      alert("Please write a comment with at least 10 characters");
+    if (formData.title.trim().length < 5) {
+      alert("Please enter a title with at least 5 characters");
+      return;
+    }
+    if (formData.content.trim().length < 10) {
+      alert("Please write a review with at least 10 characters");
       return;
     }
 
     setIsSubmitting(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      alert("Review updated successfully!");
-      router.push(`/courses/${courseId}`);
-    }, 1000);
+    try {
+      const reviewData = {
+        title: formData.title.trim(),
+        content: formData.content.trim(),
+        rating: formData.rating,
+        pros: formData.pros.trim() || undefined,
+        cons: formData.cons.trim() || undefined,
+        wouldRecommend: formData.wouldRecommend,
+      };
+
+      const response = await reviewsApi.updateReview(reviewId, reviewData);
+
+      if (response.success) {
+        alert("Review updated successfully!");
+        router.push(`/courses/${courseId}`);
+      } else {
+        alert(response.message || "Failed to update review");
+      }
+    } catch (error: unknown) {
+      console.error("Error updating review:", error);
+      alert(error instanceof Error ? error.message : "Failed to update review");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleDelete = async () => {
-    setIsSubmitting(true);
+    if (
+      !confirm(
+        "Are you sure you want to delete this review? This action cannot be undone."
+      )
+    ) {
+      return;
+    }
 
-    // Simulate API call
-    setTimeout(() => {
-      alert("Review deleted successfully!");
-      router.push(`/courses/${courseId}`);
-    }, 1000);
+    try {
+      const response = await reviewsApi.deleteReview(reviewId);
+
+      if (response.success) {
+        alert("Review deleted successfully!");
+        router.push(`/courses/${courseId}`);
+      } else {
+        alert("Failed to delete review");
+      }
+    } catch (error: unknown) {
+      console.error("Error deleting review:", error);
+      alert(error instanceof Error ? error.message : "Failed to delete review");
+    }
   };
-
-  const aspects = [
-    "Clear explanations",
-    "Good pacing",
-    "Practical examples",
-    "Engaging content",
-    "Well organized",
-    "Helpful exercises",
-  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -211,7 +259,7 @@ export default function EditFeedbackPage() {
 
               {/* Delete Button */}
               <button
-                onClick={() => setShowDeleteConfirm(true)}
+                onClick={handleDelete}
                 className="text-red-600 hover:text-red-700 font-medium"
               >
                 Delete Review
@@ -248,73 +296,78 @@ export default function EditFeedbackPage() {
               </p>
             </div>
 
-            {/* Comment */}
+            {/* Title */}
+            <div>
+              <label className="block text-lg font-medium text-gray-900 mb-4">
+                Review Title *
+              </label>
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, title: e.target.value }))
+                }
+                placeholder="Summarize your experience with this course"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                required
+                minLength={5}
+              />
+              <p className="text-sm text-gray-500 mt-2">
+                {formData.title.length}/100 characters (minimum 5 required)
+              </p>
+            </div>
+
+            {/* Content */}
             <div>
               <label className="block text-lg font-medium text-gray-900 mb-4">
                 Your Review *
               </label>
               <textarea
-                value={formData.comment}
+                value={formData.content}
                 onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, comment: e.target.value }))
+                  setFormData((prev) => ({ ...prev, content: e.target.value }))
                 }
                 placeholder="Share your thoughts about this course. What did you like? What could be improved? How was the instructor?"
                 rows={6}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
                 required
+                minLength={10}
               />
               <p className="text-sm text-gray-500 mt-2">
-                {formData.comment.length}/500 characters (minimum 10 required)
+                {formData.content.length}/1000 characters (minimum 10 required)
               </p>
             </div>
 
-            {/* Difficulty */}
+            {/* Pros */}
             <div>
               <label className="block text-lg font-medium text-gray-900 mb-4">
-                Course Difficulty
+                What did you like? (Optional)
               </label>
-              <div className="flex space-x-4">
-                {["easy", "medium", "hard"].map((difficulty) => (
-                  <label key={difficulty} className="flex items-center">
-                    <input
-                      type="radio"
-                      name="difficulty"
-                      value={difficulty}
-                      checked={formData.difficulty === difficulty}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          difficulty: e.target.value,
-                        }))
-                      }
-                      className="mr-2 text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <span className="capitalize text-gray-700">
-                      {difficulty}
-                    </span>
-                  </label>
-                ))}
-              </div>
+              <textarea
+                value={formData.pros}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, pros: e.target.value }))
+                }
+                placeholder="List the positive aspects of this course..."
+                rows={3}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+              />
             </div>
 
-            {/* Helpful Aspects */}
+            {/* Cons */}
             <div>
               <label className="block text-lg font-medium text-gray-900 mb-4">
-                What aspects were most helpful? (Optional)
+                What could be improved? (Optional)
               </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {aspects.map((aspect) => (
-                  <label key={aspect} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.helpfulAspects.includes(aspect)}
-                      onChange={() => handleAspectToggle(aspect)}
-                      className="mr-2 text-indigo-600 focus:ring-indigo-500 rounded"
-                    />
-                    <span className="text-gray-700 text-sm">{aspect}</span>
-                  </label>
-                ))}
-              </div>
+              <textarea
+                value={formData.cons}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, cons: e.target.value }))
+                }
+                placeholder="List areas for improvement..."
+                rows={3}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+              />
             </div>
 
             {/* Recommendation */}
@@ -370,7 +423,8 @@ export default function EditFeedbackPage() {
                 disabled={
                   isSubmitting ||
                   formData.rating === 0 ||
-                  formData.comment.trim().length < 10
+                  formData.title.trim().length < 5 ||
+                  formData.content.trim().length < 10
                 }
                 className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
               >
@@ -380,37 +434,6 @@ export default function EditFeedbackPage() {
           </form>
         </div>
       </div>
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">
-              Delete Review?
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to delete this review? This action cannot be
-              undone.
-            </p>
-            <div className="flex justify-end space-x-4">
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200"
-                disabled={isSubmitting}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Deleting..." : "Delete"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

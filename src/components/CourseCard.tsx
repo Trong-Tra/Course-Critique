@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 interface Course {
-  id: number;
+  id: string | number;
   title: string;
   instructor: string;
   rating: number;

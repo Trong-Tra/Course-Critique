@@ -1,43 +1,56 @@
+"use client";
+
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import PartnerSection from "@/components/PartnerSection";
 import CourseCard from "@/components/CourseCard";
 import SplitText from "@/components/SplitText";
+import { coursesApi } from "@/lib/api";
+import { Course } from "@/types/api";
 
-// Mock data for top-rated courses
-const topCourses = [
-  {
-    id: 1,
-    title: "Complete Python Programming",
-    instructor: "Dr. Sarah Johnson",
-    rating: 4.9,
-    students: 12543,
-    thumbnail: "/api/placeholder/300/200",
-    price: "$89.99",
-    category: "Programming",
-  },
-  {
-    id: 2,
-    title: "Advanced React & Next.js",
-    instructor: "Mike Chen",
-    rating: 4.8,
-    students: 8932,
-    thumbnail: "/api/placeholder/300/200",
-    price: "$94.99",
-    category: "Web Development",
-  },
-  {
-    id: 3,
-    title: "Data Science Fundamentals",
-    instructor: "Prof. Emily Davis",
-    rating: 4.7,
-    students: 15678,
-    thumbnail: "/api/placeholder/300/200",
-    price: "$79.99",
-    category: "Data Science",
-  },
-];
+// Function to convert API Course to CourseCard format
+function formatCourseForCard(course: Course) {
+  return {
+    id: course.id, // Keep original string ID
+    title: course.title,
+    instructor: course.instructor,
+    rating: course.averageRating || 0,
+    reviewCount: course.reviewCount || 0,
+    students: course.students || 0,
+    price: `$${course.price}`,
+    category: course.category,
+    level: course.level,
+    duration: course.duration,
+    description: course.description,
+  };
+}
 
 export default function Home() {
+  const [topCourses, setTopCourses] = useState<
+    ReturnType<typeof formatCourseForCard>[]
+  >([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTopCourses = async () => {
+      try {
+        const response = await coursesApi.getCourses({
+          sortBy: "rating",
+          sortOrder: "desc",
+          limit: 3,
+        });
+        if (response.success && response.data) {
+          setTopCourses(response.data.map(formatCourseForCard));
+        }
+      } catch (error) {
+        console.error("Failed to fetch courses:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTopCourses();
+  }, []);
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -167,9 +180,32 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {topCourses.map((course) => (
-              <CourseCard key={course.id} course={course} />
-            ))}
+            {loading ? (
+              // Loading skeleton
+              Array.from({ length: 3 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="bg-white rounded-xl card-shadow animate-pulse"
+                >
+                  <div className="w-full h-48 bg-gray-200 rounded-t-xl"></div>
+                  <div className="p-6 space-y-3">
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                  </div>
+                </div>
+              ))
+            ) : topCourses.length > 0 ? (
+              topCourses.map((course) => (
+                <CourseCard key={course.id} course={course} />
+              ))
+            ) : (
+              <div className="col-span-full text-center py-12">
+                <p className="text-gray-600 text-lg">
+                  No courses available at the moment. Check back soon!
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="text-center mt-12">

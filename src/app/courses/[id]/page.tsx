@@ -2,135 +2,122 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { useState } from "react";
-
-// Mock course data
-const courseData: Record<
-  string,
-  {
-    id: number;
-    title: string;
-    instructor: string;
-    rating: number;
-    reviewCount: number;
-    students: number;
-    price: string;
-    category: string;
-    level: string;
-    duration: string;
-    description: string;
-    whatYouLearn: string[];
-    requirements: string[];
-  }
-> = {
-  "1": {
-    id: 1,
-    title: "Complete Python Programming",
-    instructor: "Dr. Sarah Johnson",
-    rating: 4.9,
-    reviewCount: 1543,
-    students: 12543,
-    price: "$89.99",
-    category: "Programming",
-    level: "Beginner",
-    duration: "40 hours",
-    description:
-      "Master Python from basics to advanced concepts with hands-on projects. This comprehensive course covers everything from variables and data types to web development and data analysis.",
-    whatYouLearn: [
-      "Python fundamentals and syntax",
-      "Object-oriented programming",
-      "File handling and databases",
-      "Web scraping and APIs",
-      "Data analysis with pandas",
-      "Building web applications",
-    ],
-    requirements: [
-      "No programming experience required",
-      "Computer with internet connection",
-      "Willingness to learn and practice",
-    ],
-  },
-  "2": {
-    id: 2,
-    title: "Advanced React & Next.js",
-    instructor: "Mike Chen",
-    rating: 4.8,
-    reviewCount: 892,
-    students: 8932,
-    price: "$94.99",
-    category: "Web Development",
-    level: "Advanced",
-    duration: "35 hours",
-    description:
-      "Build modern web applications with React and Next.js frameworks. Learn advanced patterns, performance optimization, and deployment strategies.",
-    whatYouLearn: [
-      "Advanced React patterns",
-      "Next.js App Router",
-      "Server-side rendering",
-      "API routes and middleware",
-      "Performance optimization",
-      "Deployment strategies",
-    ],
-    requirements: [
-      "Solid JavaScript knowledge",
-      "Basic React experience",
-      "Understanding of HTML/CSS",
-    ],
-  },
-};
-
-// Mock reviews data
-const reviewsData = [
-  {
-    id: 1,
-    userName: "Alice Johnson",
-    rating: 5,
-    date: "2024-01-15",
-    comment:
-      "Excellent course! The instructor explains everything clearly and the projects are very practical. I feel confident using Python now.",
-    helpful: 23,
-  },
-  {
-    id: 2,
-    userName: "Bob Smith",
-    rating: 4,
-    date: "2024-01-10",
-    comment:
-      "Great content overall. Some sections could be a bit more detailed, but the hands-on approach is fantastic.",
-    helpful: 18,
-  },
-  {
-    id: 3,
-    userName: "Carol Davis",
-    rating: 5,
-    date: "2024-01-08",
-    comment:
-      "This course exceeded my expectations. The instructor is knowledgeable and the pace is perfect for beginners.",
-    helpful: 31,
-  },
-  {
-    id: 4,
-    userName: "David Wilson",
-    rating: 4,
-    date: "2024-01-05",
-    comment:
-      "Very comprehensive course. The projects helped me understand the concepts better. Highly recommended!",
-    helpful: 15,
-  },
-];
+import { useState, useEffect } from "react";
+import { coursesApi, reviewsApi } from "@/lib/api";
+import { Course, Review } from "@/types/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function CourseDetailPage() {
   const params = useParams();
   const courseId = params.id as string;
-  const course = courseData[courseId];
+  const { user } = useAuth();
+  const [course, setCourse] = useState<Course | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
 
-  if (!course) {
+  // Fetch course data
+  useEffect(() => {
+    const fetchCourse = async () => {
+      try {
+        setLoading(true);
+        const response = await coursesApi.getCourse(courseId);
+
+        if (response.success && response.data) {
+          setCourse(response.data);
+        } else {
+          setError("Course not found");
+        }
+      } catch (error: unknown) {
+        setError(
+          error instanceof Error ? error.message : "Failed to fetch course"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (courseId) {
+      fetchCourse();
+    }
+  }, [courseId]);
+
+  // Fetch reviews
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        setReviewsLoading(true);
+        const response = await reviewsApi.getReviews({ courseId });
+
+        if (response.success) {
+          setReviews(response.data || []);
+        }
+      } catch (error: unknown) {
+        console.error("Failed to fetch reviews:", error);
+      } finally {
+        setReviewsLoading(false);
+      }
+    };
+
+    if (courseId) {
+      fetchReviews();
+    }
+  }, [courseId]);
+
+  // Handle review deletion
+  const handleDeleteReview = async (reviewId: string) => {
+    if (
+      !confirm(
+        "Are you sure you want to delete this review? This action cannot be undone."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const response = await reviewsApi.deleteReview(reviewId);
+
+      if (response.success) {
+        // Remove the deleted review from the state
+        setReviews((prev) => prev.filter((review) => review.id !== reviewId));
+        alert("Review deleted successfully!");
+      } else {
+        alert(response.message || "Failed to delete review");
+      }
+    } catch (error: unknown) {
+      console.error("Error deleting review:", error);
+      alert(error instanceof Error ? error.message : "Failed to delete review");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="h-12 bg-gray-200 rounded w-3/4 mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                <div className="h-64 bg-gray-200 rounded"></div>
+              </div>
+              <div className="h-96 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !course) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            Course Not Found
+            {error || "Course Not Found"}
           </h1>
           <Link
             href="/courses"
@@ -182,13 +169,13 @@ export default function CourseDetailPage() {
 
               <div className="flex items-center gap-4 mb-6">
                 <div className="flex items-center">
-                  {renderStars(course.rating)}
+                  {renderStars(course.averageRating || 0)}
                   <span className="ml-2 text-lg font-semibold text-gray-900">
-                    {course.rating}
+                    {(course.averageRating || 0).toFixed(1)}
                   </span>
                 </div>
                 <span className="text-gray-500">
-                  ({course.reviewCount} reviews)
+                  ({course.reviewCount || 0} reviews)
                 </span>
                 <span className="text-gray-500">
                   👥 {course.students.toLocaleString()} students
@@ -204,9 +191,17 @@ export default function CourseDetailPage() {
             <div className="lg:w-96 flex-shrink-0">
               <div className="bg-white rounded-xl card-shadow p-6 sticky top-24">
                 <div className="w-full h-48 bg-gradient-to-br from-indigo-200 to-purple-200 rounded-lg mb-6 flex items-center justify-center">
-                  <span className="text-indigo-600 font-semibold text-center">
-                    {course.title}
-                  </span>
+                  {course.thumbnail ? (
+                    <img
+                      src={course.thumbnail}
+                      alt={course.title}
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                  ) : (
+                    <span className="text-indigo-600 font-semibold text-center">
+                      {course.title}
+                    </span>
+                  )}
                 </div>
 
                 <div className="text-center mb-6">
@@ -278,34 +273,47 @@ export default function CourseDetailPage() {
             <div className="p-6">
               {activeTab === "overview" && (
                 <div className="space-y-8">
-                  {/* What You'll Learn */}
+                  {/* Course Description */}
                   <div>
                     <h3 className="text-xl font-bold text-gray-900 mb-4">
-                      What you&apos;ll learn
+                      Course Description
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {course.whatYouLearn.map((item, index) => (
-                        <div key={index} className="flex items-start">
-                          <span className="text-green-500 mr-3 mt-1">✓</span>
-                          <span className="text-gray-700">{item}</span>
-                        </div>
-                      ))}
-                    </div>
+                    <p className="text-gray-700 leading-relaxed">
+                      {course.description}
+                    </p>
                   </div>
 
-                  {/* Requirements */}
+                  {/* Course Info */}
                   <div>
                     <h3 className="text-xl font-bold text-gray-900 mb-4">
-                      Requirements
+                      Course Information
                     </h3>
-                    <ul className="space-y-2">
-                      {course.requirements.map((req, index) => (
-                        <li key={index} className="flex items-start">
-                          <span className="text-gray-400 mr-3 mt-1">•</span>
-                          <span className="text-gray-700">{req}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="font-semibold text-gray-900 mb-1">
+                          Instructor
+                        </div>
+                        <div className="text-gray-700">{course.instructor}</div>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="font-semibold text-gray-900 mb-1">
+                          Category
+                        </div>
+                        <div className="text-gray-700">{course.category}</div>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="font-semibold text-gray-900 mb-1">
+                          Level
+                        </div>
+                        <div className="text-gray-700">{course.level}</div>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="font-semibold text-gray-900 mb-1">
+                          Duration
+                        </div>
+                        <div className="text-gray-700">{course.duration}</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -314,7 +322,7 @@ export default function CourseDetailPage() {
                 <div>
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="text-xl font-bold text-gray-900">
-                      Student Reviews
+                      Student Reviews ({course.reviewCount || 0})
                     </h3>
                     <Link
                       href={`/courses/${course.id}/add-feedback`}
@@ -324,35 +332,116 @@ export default function CourseDetailPage() {
                     </Link>
                   </div>
 
-                  <div className="space-y-6">
-                    {reviewsData.map((review) => (
-                      <div
-                        key={review.id}
-                        className="border-b border-gray-200 pb-6 last:border-b-0"
+                  {reviewsLoading ? (
+                    <div className="space-y-4">
+                      {[...Array(3)].map((_, i) => (
+                        <div key={i} className="animate-pulse">
+                          <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+                          <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : reviews.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="text-gray-500 text-lg mb-4">
+                        No reviews yet
+                      </div>
+                      <p className="text-gray-400 mb-4">
+                        Be the first to review this course!
+                      </p>
+                      <Link
+                        href={`/courses/${course.id}/add-feedback`}
+                        className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors duration-200"
                       >
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <h4 className="font-semibold text-gray-900">
-                              {review.userName}
-                            </h4>
-                            <div className="flex items-center mt-1">
-                              {renderStars(review.rating)}
-                              <span className="ml-2 text-sm text-gray-500">
-                                {review.date}
+                        Write the First Review
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {reviews.map((review) => (
+                        <div
+                          key={review.id}
+                          className="border-b border-gray-200 pb-6 last:border-b-0"
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h4 className="font-semibold text-gray-900">
+                                {review.user?.name || "Anonymous"}
+                              </h4>
+                              <div className="flex items-center mt-1">
+                                {renderStars(review.rating)}
+                                <span className="ml-2 text-sm text-gray-500">
+                                  {new Date(
+                                    review.createdAt
+                                  ).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Edit/Delete buttons for user's own reviews */}
+                            {user && review.userId === user.id && (
+                              <div className="flex items-center space-x-2">
+                                <Link
+                                  href={`/courses/${course.id}/edit-feedback/${review.id}`}
+                                  className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+                                >
+                                  Edit
+                                </Link>
+                                <button
+                                  onClick={() => handleDeleteReview(review.id)}
+                                  className="text-red-600 hover:text-red-700 text-sm font-medium"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          <h5 className="font-medium text-gray-900 mb-2">
+                            {review.title}
+                          </h5>
+                          <p className="text-gray-700 mb-3">{review.content}</p>
+
+                          {review.pros && (
+                            <div className="mb-2">
+                              <span className="text-green-600 font-medium">
+                                Pros:{" "}
+                              </span>
+                              <span className="text-gray-700">
+                                {review.pros}
                               </span>
                             </div>
+                          )}
+
+                          {review.cons && (
+                            <div className="mb-2">
+                              <span className="text-red-600 font-medium">
+                                Cons:{" "}
+                              </span>
+                              <span className="text-gray-700">
+                                {review.cons}
+                              </span>
+                            </div>
+                          )}
+
+                          <div className="flex items-center text-sm text-gray-500">
+                            <span
+                              className={`mr-4 ${
+                                review.wouldRecommend
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }`}
+                            >
+                              {review.wouldRecommend
+                                ? "👍 Recommends"
+                                : "👎 Does not recommend"}
+                            </span>
                           </div>
                         </div>
-                        <p className="text-gray-700 mb-3">{review.comment}</p>
-                        <div className="flex items-center text-sm text-gray-500">
-                          <button className="flex items-center hover:text-indigo-600">
-                            <span className="mr-1">👍</span>
-                            Helpful ({review.helpful})
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

@@ -1,57 +1,104 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import StarRating from "@/components/StarRating";
-
-// Mock course data
-const courseData: Record<string, {
-  id: number;
-  title: string;
-  instructor: string;
-}> = {
-  "1": {
-    id: 1,
-    title: "Complete Python Programming",
-    instructor: "Dr. Sarah Johnson",
-  },
-  "2": {
-    id: 2,
-    title: "Advanced React & Next.js",
-    instructor: "Mike Chen",
-  },
-};
+import { coursesApi, reviewsApi } from "@/lib/api";
+import { Course } from "@/types/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function AddFeedbackPage() {
   const params = useParams();
   const router = useRouter();
   const courseId = params.id as string;
-  const course = courseData[courseId];
+  const { user } = useAuth();
+
+  const [course, setCourse] = useState<Course | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const [formData, setFormData] = useState({
+    title: "",
+    content: "",
     rating: 0,
-    comment: "",
+    pros: "",
+    cons: "",
     wouldRecommend: true,
-    difficulty: "medium",
-    helpfulAspects: [] as string[],
   });
 
   const [hoveredRating, setHoveredRating] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  if (!course) {
+  // Fetch course data
+  useEffect(() => {
+    const fetchCourse = async () => {
+      try {
+        setLoading(true);
+        const response = await coursesApi.getCourse(courseId);
+        
+        if (response.success && response.data) {
+          setCourse(response.data);
+        } else {
+          setError("Course not found");
+        }
+      } catch (error: unknown) {
+        setError(error instanceof Error ? error.message : "Failed to fetch course");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (courseId) {
+      fetchCourse();
+    }
+  }, [courseId]);
+
+  // Check if user is logged in
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/auth/login');
+    }
+  }, [user, loading, router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  if (error || !course) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            Course Not Found
+            {error || "Course Not Found"}
           </h1>
           <Link
             href="/courses"
             className="text-indigo-600 hover:text-indigo-700"
           >
             Back to Courses
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            Please log in to write a review
+          </h1>
+          <Link
+            href="/auth/login"
+            className="text-indigo-600 hover:text-indigo-700"
+          >
+            Go to Login
           </Link>
         </div>
       </div>
@@ -70,43 +117,49 @@ export default function AddFeedbackPage() {
     setHoveredRating(0);
   };
 
-  const handleAspectToggle = (aspect: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      helpfulAspects: prev.helpfulAspects.includes(aspect)
-        ? prev.helpfulAspects.filter((a) => a !== aspect)
-        : [...prev.helpfulAspects, aspect],
-    }));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.rating === 0) {
       alert("Please select a rating");
       return;
     }
-    if (formData.comment.trim().length < 10) {
-      alert("Please write a comment with at least 10 characters");
+    if (formData.title.trim().length < 5) {
+      alert("Please enter a title with at least 5 characters");
+      return;
+    }
+    if (formData.content.trim().length < 10) {
+      alert("Please write a review with at least 10 characters");
       return;
     }
 
     setIsSubmitting(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      alert("Review submitted successfully!");
-      router.push(`/courses/${courseId}`);
-    }, 1000);
-  };
+    try {
+      const reviewData = {
+        title: formData.title.trim(),
+        content: formData.content.trim(),
+        rating: formData.rating,
+        pros: formData.pros.trim() || undefined,
+        cons: formData.cons.trim() || undefined,
+        wouldRecommend: formData.wouldRecommend,
+        courseId: courseId,
+      };
 
-  const aspects = [
-    "Clear explanations",
-    "Good pacing",
-    "Practical examples",
-    "Engaging content",
-    "Well organized",
-    "Helpful exercises",
-  ];
+      const response = await reviewsApi.createReview(reviewData);
+
+      if (response.success) {
+        alert("Review submitted successfully!");
+        router.push(`/courses/${courseId}`);
+      } else {
+        alert(response.message || "Failed to submit review");
+      }
+    } catch (error: unknown) {
+      console.error("Error submitting review:", error);
+      alert(error instanceof Error ? error.message : "Failed to submit review");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -180,73 +233,86 @@ export default function AddFeedbackPage() {
               </p>
             </div>
 
-            {/* Comment */}
+            {/* Title */}
+            <div>
+              <label className="block text-lg font-medium text-gray-900 mb-4">
+                Review Title *
+              </label>
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, title: e.target.value }))
+                }
+                placeholder="Give your review a short, descriptive title"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                required
+                maxLength={100}
+              />
+              <p className="text-sm text-gray-500 mt-2">
+                {formData.title.length}/100 characters (minimum 5 required)
+              </p>
+            </div>
+
+            {/* Content */}
             <div>
               <label className="block text-lg font-medium text-gray-900 mb-4">
                 Your Review *
               </label>
               <textarea
-                value={formData.comment}
+                value={formData.content}
                 onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, comment: e.target.value }))
+                  setFormData((prev) => ({ ...prev, content: e.target.value }))
                 }
                 placeholder="Share your thoughts about this course. What did you like? What could be improved? How was the instructor?"
                 rows={6}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
                 required
+                maxLength={1000}
               />
               <p className="text-sm text-gray-500 mt-2">
-                {formData.comment.length}/500 characters (minimum 10 required)
+                {formData.content.length}/1000 characters (minimum 10 required)
               </p>
             </div>
 
-            {/* Difficulty */}
+            {/* Pros */}
             <div>
               <label className="block text-lg font-medium text-gray-900 mb-4">
-                Course Difficulty
+                What did you like? (Optional)
               </label>
-              <div className="flex space-x-4">
-                {["easy", "medium", "hard"].map((difficulty) => (
-                  <label key={difficulty} className="flex items-center">
-                    <input
-                      type="radio"
-                      name="difficulty"
-                      value={difficulty}
-                      checked={formData.difficulty === difficulty}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          difficulty: e.target.value,
-                        }))
-                      }
-                      className="mr-2 text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <span className="capitalize text-gray-700">
-                      {difficulty}
-                    </span>
-                  </label>
-                ))}
-              </div>
+              <textarea
+                value={formData.pros}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, pros: e.target.value }))
+                }
+                placeholder="What were the strengths of this course?"
+                rows={3}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+                maxLength={500}
+              />
+              <p className="text-sm text-gray-500 mt-2">
+                {formData.pros.length}/500 characters
+              </p>
             </div>
 
-            {/* Helpful Aspects */}
+            {/* Cons */}
             <div>
               <label className="block text-lg font-medium text-gray-900 mb-4">
-                What aspects were most helpful? (Optional)
+                What could be improved? (Optional)
               </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {aspects.map((aspect) => (
-                  <label key={aspect} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.helpfulAspects.includes(aspect)}
-                      onChange={() => handleAspectToggle(aspect)}
-                      className="mr-2 text-indigo-600 focus:ring-indigo-500 rounded"
-                    />
-                    <span className="text-gray-700 text-sm">{aspect}</span>
-                  </label>
-                ))}
-              </div>
+              <textarea
+                value={formData.cons}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, cons: e.target.value }))
+                }
+                placeholder="What areas need improvement?"
+                rows={3}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+                maxLength={500}
+              />
+              <p className="text-sm text-gray-500 mt-2">
+                {formData.cons.length}/500 characters
+              </p>
             </div>
 
             {/* Recommendation */}
@@ -302,7 +368,8 @@ export default function AddFeedbackPage() {
                 disabled={
                   isSubmitting ||
                   formData.rating === 0 ||
-                  formData.comment.trim().length < 10
+                  formData.title.trim().length < 5 ||
+                  formData.content.trim().length < 10
                 }
                 className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
               >

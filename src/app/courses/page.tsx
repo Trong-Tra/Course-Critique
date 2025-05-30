@@ -1,136 +1,112 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import CourseCard from "@/components/CourseCard";
 import SplitText from "@/components/SplitText";
-
-// Mock data for courses
-const allCourses = [
-  {
-    id: 1,
-    title: "Complete Python Programming",
-    instructor: "Dr. Sarah Johnson",
-    rating: 4.9,
-    reviewCount: 1543,
-    students: 12543,
-    price: "$89.99",
-    category: "Programming",
-    level: "Beginner",
-    duration: "40 hours",
-    description:
-      "Master Python from basics to advanced concepts with hands-on projects.",
-  },
-  {
-    id: 2,
-    title: "Advanced React & Next.js",
-    instructor: "Mike Chen",
-    rating: 4.8,
-    reviewCount: 892,
-    students: 8932,
-    price: "$94.99",
-    category: "Web Development",
-    level: "Advanced",
-    duration: "35 hours",
-    description:
-      "Build modern web applications with React and Next.js frameworks.",
-  },
-  {
-    id: 3,
-    title: "Data Science Fundamentals",
-    instructor: "Prof. Emily Davis",
-    rating: 4.7,
-    reviewCount: 2156,
-    students: 15678,
-    price: "$79.99",
-    category: "Data Science",
-    level: "Intermediate",
-    duration: "50 hours",
-    description:
-      "Learn data analysis, visualization, and machine learning basics.",
-  },
-  {
-    id: 4,
-    title: "JavaScript Mastery",
-    instructor: "Alex Rodriguez",
-    rating: 4.6,
-    reviewCount: 934,
-    students: 9876,
-    price: "$69.99",
-    category: "Programming",
-    level: "Beginner",
-    duration: "30 hours",
-    description:
-      "Complete JavaScript course from fundamentals to ES6+ features.",
-  },
-  {
-    id: 5,
-    title: "UI/UX Design Principles",
-    instructor: "Jessica Wong",
-    rating: 4.8,
-    reviewCount: 756,
-    students: 6543,
-    price: "$84.99",
-    category: "Design",
-    level: "Beginner",
-    duration: "25 hours",
-    description:
-      "Create beautiful and user-friendly designs with modern principles.",
-  },
-  {
-    id: 6,
-    title: "Machine Learning with Python",
-    instructor: "Dr. Robert Kim",
-    rating: 4.9,
-    reviewCount: 1234,
-    students: 11234,
-    price: "$99.99",
-    category: "Data Science",
-    level: "Advanced",
-    duration: "60 hours",
-    description:
-      "Deep dive into machine learning algorithms and implementations.",
-  },
-];
-
-const categories = [
-  "All",
-  "Programming",
-  "Web Development",
-  "Data Science",
-  "Design",
-];
-const levels = ["All", "Beginner", "Intermediate", "Advanced"];
+import { coursesApi } from "@/lib/api";
+import { Course, CourseFilters } from "@/types/api";
 
 export default function CoursesPage() {
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedLevel, setSelectedLevel] = useState("All");
-  const [sortBy, setSortBy] = useState("rating");
-  const [searchTerm, setSearchTerm] = useState("");
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 12,
+    total: 0,
+    totalPages: 0,
+  });
 
-  // Filter and sort courses
-  const filteredCourses = allCourses
-    .filter((course) => {
-      const matchesCategory =
-        selectedCategory === "All" || course.category === selectedCategory;
-      const matchesLevel =
-        selectedLevel === "All" || course.level === selectedLevel;
-      const matchesSearch =
-        course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        course.instructor.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesCategory && matchesLevel && matchesSearch;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case "rating":
-          return b.rating - a.rating;
-        case "students":
-          return b.students - a.students;
-        case "price":
-          return parseFloat(a.price.slice(1)) - parseFloat(b.price.slice(1));
-        default:
-          return 0;
+  const [filters, setFilters] = useState<CourseFilters>({
+    category: "All",
+    level: "All",
+    search: "",
+    sortBy: "rating",
+    sortOrder: "desc",
+    page: 1,
+    limit: 12,
+  });
+
+  // Fetch courses from API
+  const fetchCourses = async (currentFilters: CourseFilters) => {
+    try {
+      setLoading(true);
+      const response = await coursesApi.getCourses(currentFilters);
+
+      if (response.success && response.data) {
+        setCourses(response.data);
+        setPagination(
+          response.pagination || {
+            page: 1,
+            limit: 12,
+            total: 0,
+            totalPages: 0,
+          }
+        );
+      } else {
+        setError("Failed to fetch courses");
       }
-    });
+    } catch (error: unknown) {
+      setError(
+        error instanceof Error ? error.message : "Failed to fetch courses"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch courses on component mount and when filters change
+  useEffect(() => {
+    fetchCourses(filters);
+  }, [filters]);
+
+  const handleFilterChange = (newFilters: Partial<CourseFilters>) => {
+    setFilters((prev) => ({
+      ...prev,
+      ...newFilters,
+      page: 1, // Reset to first page when filters change
+    }));
+  };
+
+  const handlePageChange = (page: number) => {
+    setFilters((prev) => ({
+      ...prev,
+      page,
+    }));
+  };
+
+  const categories = [
+    "All",
+    "Programming",
+    "Web Development",
+    "Data Science",
+    "Design",
+    "Business",
+  ];
+  const levels = ["All", "Beginner", "Intermediate", "Advanced"];
+  const sortOptions = [
+    { value: "rating", label: "Highest Rated" },
+    { value: "students", label: "Most Popular" },
+    { value: "price", label: "Lowest Price" },
+    { value: "date", label: "Newest" },
+  ];
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-600 text-xl mb-4">Error loading courses</div>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => fetchCourses(filters)}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -175,8 +151,10 @@ export default function CoursesPage() {
                 <input
                   type="text"
                   placeholder="Search by title or instructor..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={filters.search || ""}
+                  onChange={(e) =>
+                    handleFilterChange({ search: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
@@ -187,8 +165,10 @@ export default function CoursesPage() {
                   Category
                 </label>
                 <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  value={filters.category || "All"}
+                  onChange={(e) =>
+                    handleFilterChange({ category: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 >
                   {categories.map((category) => (
@@ -205,8 +185,10 @@ export default function CoursesPage() {
                   Level
                 </label>
                 <select
-                  value={selectedLevel}
-                  onChange={(e) => setSelectedLevel(e.target.value)}
+                  value={filters.level || "All"}
+                  onChange={(e) =>
+                    handleFilterChange({ level: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 >
                   {levels.map((level) => (
@@ -223,13 +205,24 @@ export default function CoursesPage() {
                   Sort By
                 </label>
                 <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
+                  value={filters.sortBy || "rating"}
+                  onChange={(e) =>
+                    handleFilterChange({
+                      sortBy: e.target.value as
+                        | "rating"
+                        | "students"
+                        | "price"
+                        | "date",
+                      sortOrder: e.target.value === "price" ? "asc" : "desc",
+                    })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 >
-                  <option value="rating">Highest Rated</option>
-                  <option value="students">Most Popular</option>
-                  <option value="price">Lowest Price</option>
+                  {sortOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -239,32 +232,101 @@ export default function CoursesPage() {
           <div className="flex-1">
             <div className="mb-6 flex justify-between items-center">
               <p className="text-gray-600">
-                Showing {filteredCourses.length} of {allCourses.length} courses
+                {loading
+                  ? "Loading..."
+                  : `Showing ${courses.length} of ${pagination.total} courses`}
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredCourses.map((course) => (
-                <CourseCard key={course.id} course={course} />
-              ))}
-            </div>
-
-            {filteredCourses.length === 0 && (
-              <div className="text-center py-12">
-                <p className="text-gray-500 text-lg">
-                  No courses found matching your criteria.
-                </p>
-                <button
-                  onClick={() => {
-                    setSelectedCategory("All");
-                    setSelectedLevel("All");
-                    setSearchTerm("");
-                  }}
-                  className="mt-4 text-indigo-600 hover:text-indigo-700 font-medium"
-                >
-                  Clear all filters
-                </button>
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {[...Array(6)].map((_, index) => (
+                  <div
+                    key={index}
+                    className="bg-white rounded-lg card-shadow p-6 animate-pulse"
+                  >
+                    <div className="h-40 bg-gray-200 rounded-lg mb-4"></div>
+                    <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                ))}
               </div>
+            ) : courses.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-gray-500 text-xl mb-4">
+                  No courses found
+                </div>
+                <p className="text-gray-400">
+                  Try adjusting your filters or search terms
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {(courses || []).map((course) => (
+                    <CourseCard
+                      key={course.id}
+                      course={{
+                        id: course.id,
+                        title: course.title,
+                        instructor: course.instructor,
+                        rating: course.averageRating || 0,
+                        reviewCount: course.reviewCount || 0,
+                        students: course.students,
+                        price: course.price,
+                        category: course.category,
+                        level: course.level,
+                        duration: course.duration,
+                        description: course.description,
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {pagination && pagination.totalPages > 1 && (
+                  <div className="mt-8 flex justify-center">
+                    <nav className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handlePageChange(pagination.page - 1)}
+                        disabled={pagination.page === 1}
+                        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Previous
+                      </button>
+
+                      {Array.from(
+                        { length: pagination.totalPages },
+                        (_, index) => {
+                          const page = index + 1;
+                          return (
+                            <button
+                              key={page}
+                              onClick={() => handlePageChange(page)}
+                              className={`px-3 py-2 text-sm font-medium rounded-md ${
+                                page === pagination.page
+                                  ? "bg-indigo-600 text-white"
+                                  : "text-gray-500 bg-white border border-gray-300 hover:bg-gray-50"
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          );
+                        }
+                      )}
+
+                      <button
+                        onClick={() => handlePageChange(pagination.page + 1)}
+                        disabled={pagination.page === pagination.totalPages}
+                        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
+                      </button>
+                    </nav>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

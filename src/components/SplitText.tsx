@@ -31,7 +31,8 @@ const SplitText: React.FC<SplitTextProps> = ({
   as: Component = "p",
   display = "block",
 }) => {
-  const words = text.split(" ").map((word) => word.split(""));
+  const safeText = text || "";
+  const words = safeText.split(" ").map((word) => word.split(""));
   const letters = words.flat();
   const [inView, setInView] = useState(false);
   const ref = useRef<HTMLParagraphElement>(null);
@@ -77,6 +78,11 @@ const SplitText: React.FC<SplitTextProps> = ({
       config: { easing },
     }))
   );
+
+  // Handle empty text case
+  if (!safeText.trim()) {
+    return <Component className={className} ref={ref} />;
+  }
 
   return (
     <Component
