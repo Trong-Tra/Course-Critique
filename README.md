@@ -2,7 +2,9 @@
 
 A comprehensive course review platform built with Next.js 15, TypeScript, PostgreSQL, and Prisma. Users can browse courses, read authentic reviews, and share their learning experiences.
 
-![Course Critique](./public/logo.png)
+<div align="center">
+    <img src="./public/logo.png" alt="Course Critique" style="background-color: white; padding: 20px; border-radius: 10px;" width="300"/>
+</div>
 
 ## ✨ Features
 
@@ -228,5 +230,3 @@ This project is developed and maintained by **[Trong-tra](https://github.com/Tro
 </div>
 
 ---
-
-**Happy Learning! 📚✨**
