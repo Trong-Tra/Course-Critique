@@ -37,14 +37,38 @@ export default function StarRating({
     }
   };
 
-  const displayRating = hoveredRating || rating;
-
   return (
     <div className="flex items-center space-x-2">
       <div className="flex">
         {Array.from({ length: 5 }, (_, i) => {
           const starNumber = i + 1;
-          const isFilled = starNumber <= displayRating;
+          const currentRating = hoveredRating || rating;
+          const isFilled = starNumber <= currentRating;
+          const isHovered =
+            interactive &&
+            hoveredRating &&
+            hoveredRating > 0 &&
+            starNumber <= hoveredRating;
+          const hasNoRating =
+            rating === 0 && (!hoveredRating || hoveredRating === 0);
+
+          // Determine star appearance
+          let starClass = "";
+          let starIcon = "";
+
+          if (hasNoRating && interactive) {
+            // No rating selected yet - show empty outline stars
+            starClass = "text-gray-400";
+            starIcon = "★";
+          } else if (isFilled) {
+            // Star is filled
+            starClass = "text-yellow-400";
+            starIcon = "★";
+          } else {
+            // Star is not filled
+            starClass = "text-gray-300";
+            starIcon = "★";
+          }
 
           return (
             <button
@@ -57,23 +81,23 @@ export default function StarRating({
                 interactive ? () => handleStarHover(starNumber) : undefined
               }
               onMouseLeave={interactive ? onRatingLeave : undefined}
-              className={`${sizeClasses[size]} ${
-                isFilled ? "text-yellow-400" : "text-gray-300"
-              } ${
+              className={`${sizeClasses[size]} ${starClass} ${
                 interactive
-                  ? "hover:text-yellow-400 cursor-pointer transition-colors"
+                  ? "hover:text-yellow-300 hover:scale-110 cursor-pointer transition-all duration-200"
                   : "cursor-default"
-              }`}
+              } ${isHovered ? "transform scale-110" : ""}`}
               disabled={!interactive}
             >
-              ⭐
+              {starIcon}
             </button>
           );
         })}
       </div>
       {showNumber && (
         <span className={`font-semibold text-gray-900 ${sizeClasses[size]}`}>
-          {displayRating.toFixed(1)}
+          {(hoveredRating || rating) === 0
+            ? "No rating"
+            : (hoveredRating || rating).toFixed(1)}
         </span>
       )}
     </div>

@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { coursesApi, reviewsApi } from "@/lib/api";
 import { Course, Review } from "@/types/api";
 import { useAuth } from "@/contexts/AuthContext";
+import StarRating from "@/components/StarRating";
 
 export default function CourseDetailPage() {
   const params = useParams();
@@ -130,19 +131,6 @@ export default function CourseDetailPage() {
     );
   }
 
-  const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <span
-        key={i}
-        className={`text-lg ${
-          i < Math.floor(rating) ? "text-yellow-400" : "text-gray-300"
-        }`}
-      >
-        ⭐
-      </span>
-    ));
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Course Header */}
@@ -169,10 +157,11 @@ export default function CourseDetailPage() {
 
               <div className="flex items-center gap-4 mb-6">
                 <div className="flex items-center">
-                  {renderStars(course.averageRating || 0)}
-                  <span className="ml-2 text-lg font-semibold text-gray-900">
-                    {(course.averageRating || 0).toFixed(1)}
-                  </span>
+                  <StarRating
+                    rating={course.averageRating || 0}
+                    interactive={false}
+                    size="lg"
+                  />
                 </div>
                 <span className="text-gray-500">
                   ({course.reviewCount || 0} reviews)
@@ -370,7 +359,12 @@ export default function CourseDetailPage() {
                                 {review.user?.name || "Anonymous"}
                               </h4>
                               <div className="flex items-center mt-1">
-                                {renderStars(review.rating)}
+                                <StarRating
+                                  rating={review.rating}
+                                  interactive={false}
+                                  showNumber={false}
+                                  size="sm"
+                                />
                                 <span className="ml-2 text-sm text-gray-500">
                                   {new Date(
                                     review.createdAt

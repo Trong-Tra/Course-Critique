@@ -287,7 +287,12 @@ export default function EditFeedbackPage() {
                 />
               </div>
               <p className="text-sm text-gray-500">
-                {formData.rating === 0 && "Click to rate"}
+                {formData.rating === 0 &&
+                  hoveredRating === 0 &&
+                  "Click on a star to rate this course"}
+                {hoveredRating > 0 &&
+                  formData.rating === 0 &&
+                  `Rate: ${hoveredRating} star${hoveredRating > 1 ? "s" : ""}`}
                 {formData.rating === 1 && "Poor - Not satisfied"}
                 {formData.rating === 2 && "Fair - Below expectations"}
                 {formData.rating === 3 && "Good - Met expectations"}

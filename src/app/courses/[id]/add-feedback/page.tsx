@@ -36,14 +36,16 @@ export default function AddFeedbackPage() {
       try {
         setLoading(true);
         const response = await coursesApi.getCourse(courseId);
-        
+
         if (response.success && response.data) {
           setCourse(response.data);
         } else {
           setError("Course not found");
         }
       } catch (error: unknown) {
-        setError(error instanceof Error ? error.message : "Failed to fetch course");
+        setError(
+          error instanceof Error ? error.message : "Failed to fetch course"
+        );
       } finally {
         setLoading(false);
       }
@@ -57,7 +59,7 @@ export default function AddFeedbackPage() {
   // Check if user is logged in
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/auth/login');
+      router.push("/auth/login");
     }
   }, [user, loading, router]);
 
@@ -224,7 +226,12 @@ export default function AddFeedbackPage() {
                 />
               </div>
               <p className="text-sm text-gray-500">
-                {formData.rating === 0 && "Click to rate"}
+                {formData.rating === 0 &&
+                  hoveredRating === 0 &&
+                  "Click on a star to rate this course"}
+                {hoveredRating > 0 &&
+                  formData.rating === 0 &&
+                  `Rate: ${hoveredRating} star${hoveredRating > 1 ? "s" : ""}`}
                 {formData.rating === 1 && "Poor - Not satisfied"}
                 {formData.rating === 2 && "Fair - Below expectations"}
                 {formData.rating === 3 && "Good - Met expectations"}
